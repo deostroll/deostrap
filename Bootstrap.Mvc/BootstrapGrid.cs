@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text;
 using System.Web;
 using System.Web.UI;
+using Bootstrap.Mvc;
+using System.Linq.Expressions;
 
 namespace Web.Mvc.TwitterBootstrap
 {
@@ -18,8 +20,9 @@ namespace Web.Mvc.TwitterBootstrap
         striped = 0x08
     }
 
-    public class BootstrapGrid<T> : IHtmlString 
+    public class BootstrapGrid<T> : IHtmlString
     {
+        bool _isColumnsSet;
 
         public BootstrapGrid()
         {
@@ -65,38 +68,91 @@ namespace Web.Mvc.TwitterBootstrap
                     hwtr.RenderBeginTag(HtmlTextWriterTag.Table); //table begin
                     hwtr.RenderBeginTag(HtmlTextWriterTag.Thead); //thead begin
 
-                    foreach (PropertyInfo pi in properties)
+                    //Determine if the columns have been set in client
+                    if (_isColumnsSet)
                     {
-                        hwtr.RenderBeginTag(HtmlTextWriterTag.Th);
-                        hwtr.Write(pi.Name);
-                        hwtr.RenderEndTag();
+                        string[] cols = GridColumnsCache.ModelProperties;
+                        RenderGridWithColumns(hwtr, cols);
                     }
-
-                    hwtr.RenderEndTag(); //thead end
-
-                    hwtr.RenderBeginTag(HtmlTextWriterTag.Tbody); //tbody begin
-                    foreach (object item in _data)
+                    else
                     {
-                        hwtr.RenderBeginTag(HtmlTextWriterTag.Tr); //tr begin
-
-                        //properties = item.GetType().GetProperties();
-                        foreach (PropertyInfo pi in properties)
-                        {
-                            hwtr.RenderBeginTag(HtmlTextWriterTag.Td);
-                            hwtr.Write(pi.GetValue(item));
-                            hwtr.RenderEndTag();
-                        }
-
-                        hwtr.RenderEndTag();// tr end
-                    }
-                    hwtr.RenderEndTag(); //tbody end
-                    hwtr.RenderEndTag(); //table end
+                        RenderNormalGrid(hwtr, properties);
+                    }                    
                     return wtr.ToString();
                 }
             }
 
         }
 
+        private void RenderNormalGrid(HtmlTextWriter hwtr, PropertyInfo[] properties)
+        {
+            foreach (PropertyInfo pi in properties)
+            {
+                hwtr.RenderBeginTag(HtmlTextWriterTag.Th);
+                hwtr.Write(pi.Name);
+                hwtr.RenderEndTag();
+            }
+
+            hwtr.RenderEndTag(); //thead end
+
+            hwtr.RenderBeginTag(HtmlTextWriterTag.Tbody); //tbody begin
+            foreach (object item in _data)
+            {
+                hwtr.RenderBeginTag(HtmlTextWriterTag.Tr); //tr begin
+
+                //properties = item.GetType().GetProperties();
+                foreach (PropertyInfo pi in properties)
+                {
+                    hwtr.RenderBeginTag(HtmlTextWriterTag.Td);
+                    hwtr.Write(pi.GetValue(item));
+                    hwtr.RenderEndTag();
+                }
+
+                hwtr.RenderEndTag();// tr end
+            }
+            hwtr.RenderEndTag(); //tbody end
+            hwtr.RenderEndTag(); //table end
+        }
+        private void RenderGridWithColumns(HtmlTextWriter hwtr, string[] properties)
+        {
+            foreach (string pi in properties)
+            {
+                hwtr.RenderBeginTag(HtmlTextWriterTag.Th);
+                hwtr.Write(pi);
+                hwtr.RenderEndTag();
+            }
+
+            hwtr.RenderEndTag(); //thead end
+
+            hwtr.RenderBeginTag(HtmlTextWriterTag.Tbody); //tbody begin
+            foreach (object item in _data)
+            {
+                hwtr.RenderBeginTag(HtmlTextWriterTag.Tr); //tr begin
+                Dictionary<string, Func<T, object>> dlgtCache = (from x in properties
+                                                                 select new { PropertyName = x, Dlgt = MakePropertyDelegate(x) })
+                                                                 .ToDictionary(d => d.PropertyName, d => d.Dlgt);
+                //properties = item.GetType().GetProperties();
+                foreach (string pi in properties)
+                {
+                    hwtr.RenderBeginTag(HtmlTextWriterTag.Td);
+                    hwtr.Write(dlgtCache[pi]((T)item));
+                    hwtr.RenderEndTag();
+                }
+
+                hwtr.RenderEndTag();// tr end
+            }
+            hwtr.RenderEndTag(); //tbody end
+            hwtr.RenderEndTag(); //table end
+
+        }
+
+        private Func<T, object> MakePropertyDelegate(string PropertyName)
+        {
+            ParameterExpression pexp = Expression.Parameter(typeof(T));
+            Expression propgetterexp = Expression.Property(pexp, PropertyName);
+            Func<T, object> foo = Expression.Lambda<Func<T, object>>(propgetterexp, pexp).Compile();
+            return foo;
+        }
         public BootstrapGrid<T> SetId(string ID)
         {
             this.Id = ID;
@@ -115,5 +171,15 @@ namespace Web.Mvc.TwitterBootstrap
                 _id = value;
             }
         }
+
+        public BootstrapGrid<T> Columns(Action<ColumnFactory<T>> colBuilder)
+        {
+            GridColumnsCache = new ColumnFactory<T>();
+            colBuilder(GridColumnsCache);
+            _isColumnsSet = true;
+            return this;
+        }
+
+        public ColumnFactory<T> GridColumnsCache { get; set; }
     }
 }

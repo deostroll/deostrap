@@ -71,6 +71,7 @@
     <Compile Include="BootstrapGrid.cs" />
     <Compile Include="BootstrapMvcExtensions.cs" />
     <Compile Include="BootstrapViewFactory.cs" />
+    <Compile Include="ColumnFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
