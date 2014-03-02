@@ -1,0 +1,11 @@
+﻿@{
+    ViewBag.Title = "Bootstrap Mvc helpers";
+}
+@model IEnumerable<Bootstrap.Mvc.Demo.Customer>
+<h2>Customers</h2>
+
+@(Html.Bootstrap()
+    .Grid(@Model)
+    .SetId("customers")
+    .SetTableType(GridType.condensed | GridType.striped)
+    )
