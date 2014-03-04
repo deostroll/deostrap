@@ -68,10 +68,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BootstrapGrid.cs" />
+    <Compile Include="Grid\BootstrapGrid.cs" />
     <Compile Include="BootstrapMvcExtensions.cs" />
     <Compile Include="BootstrapViewFactory.cs" />
-    <Compile Include="ColumnFactory.cs" />
+    <Compile Include="Grid\BootstrapGridColumnBuilder.cs" />
+    <Compile Include="Grid\ColumnFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

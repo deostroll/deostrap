@@ -71,8 +71,16 @@ namespace Web.Mvc.TwitterBootstrap
                     //Determine if the columns have been set in client
                     if (_isColumnsSet)
                     {
-                        string[] cols = GridColumnsCache.ModelProperties;
-                        RenderGridWithColumns(hwtr, cols);
+                        
+                        if (GridColumnsCache.ColumnBuilderCache.Any())
+                        {
+                            RenderGridWithColumnBuilders(hwtr, GridColumnsCache.ColumnBuilderCache);
+                        }
+                        else
+                        {
+                            string[] cols = GridColumnsCache.ModelProperties;
+                            RenderGridWithColumnNames(hwtr, cols);
+                        }
                     }
                     else
                     {
@@ -82,6 +90,53 @@ namespace Web.Mvc.TwitterBootstrap
                 }
             }
 
+        }
+
+        private void RenderGridWithColumnBuilders(HtmlTextWriter hwtr, IList<BootstrapGridColumnBuilder<T>> list)
+        {
+            foreach (BootstrapGridColumnBuilder<T> bldr in list)
+            {
+                hwtr.RenderBeginTag(HtmlTextWriterTag.Th);
+                hwtr.Write(bldr.Title);
+                hwtr.RenderEndTag();
+            }
+            
+            hwtr.RenderEndTag(); //thead end
+
+            hwtr.RenderBeginTag(HtmlTextWriterTag.Tbody); //tbody begin
+            //foreach (object item in _data)
+            //{
+            //    hwtr.RenderBeginTag(HtmlTextWriterTag.Tr); //tr begin
+            //    Dictionary<string, Func<T, object>> dlgtCache = (from x in properties
+            //                                                     select new { PropertyName = x, Dlgt = MakePropertyDelegate(x) })
+            //                                                     .ToDictionary(d => d.PropertyName, d => d.Dlgt);
+            //    //properties = item.GetType().GetProperties();
+            //    foreach (string pi in properties)
+            //    {
+            //        hwtr.RenderBeginTag(HtmlTextWriterTag.Td);
+            //        hwtr.Write(dlgtCache[pi]((T)item));
+            //        hwtr.RenderEndTag();
+            //    }
+
+            //    hwtr.RenderEndTag();// tr end
+            //}
+            foreach (T obj in _data)
+            {
+                hwtr.RenderBeginTag(HtmlTextWriterTag.Tr); //tr begin
+                Dictionary<string, Func<T, object>> dlgtCache = (from x in list
+                                                                 select new { PropertyName = x.PropertyName, Dlgt = MakePropertyDelegate(x.PropertyName) })
+                                                                 .ToDictionary(d => d.PropertyName, d => d.Dlgt);
+                foreach (var pi in list)
+                {
+                    hwtr.RenderBeginTag(HtmlTextWriterTag.Td);
+                    hwtr.Write(dlgtCache[pi.PropertyName](obj));
+                    hwtr.RenderEndTag();
+                }
+
+                hwtr.RenderEndTag();// tr end
+            }
+            hwtr.RenderEndTag(); //tbody end
+            hwtr.RenderEndTag(); //table end
         }
 
         private void RenderNormalGrid(HtmlTextWriter hwtr, PropertyInfo[] properties)
@@ -113,7 +168,7 @@ namespace Web.Mvc.TwitterBootstrap
             hwtr.RenderEndTag(); //tbody end
             hwtr.RenderEndTag(); //table end
         }
-        private void RenderGridWithColumns(HtmlTextWriter hwtr, string[] properties)
+        private void RenderGridWithColumnNames(HtmlTextWriter hwtr, string[] properties)
         {
             foreach (string pi in properties)
             {

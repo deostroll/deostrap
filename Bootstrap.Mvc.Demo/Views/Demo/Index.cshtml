@@ -7,12 +7,12 @@
 @(Html.Bootstrap()
     .Grid(@Model)
     .SetId("customers")
-    .SetTableType(GridType.condensed | GridType.striped)
+    .SetTableType(GridType.condensed | GridType.striped | GridType.hoverEffect)
     .Columns(cols =>
     {
-        cols.Add("CustomerId");
-        cols.Add("CompanyName");
-        cols.Add("ContactName");
+        cols.Add("CustomerId").SetTitle("ID");
+        cols.Add("CompanyName").SetTitle("Company");
+        cols.Add("ContactName").SetTitle("Contact");
         cols.Add("Address");
     }
     ))
